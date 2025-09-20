@@ -331,6 +331,44 @@
             box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
         }
         
+        .voice-controls {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .voice-toggle-btn {
+            width: 40px;
+            height: 40px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 16px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .voice-toggle-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: scale(1.05);
+        }
+        
+        .voice-toggle-btn.speaking {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+        
         .crisis-alert {
             position: fixed;
             top: 20px;
@@ -518,7 +556,10 @@
             <div class="input-container">
                 <button class="voice-btn" id="voiceBtn" title="Hold to record voice message">🎤</button>
                 <textarea class="input-box" id="messageInput" placeholder="Type your message..." rows="1"></textarea>
-                <button class="send-btn" id="sendBtn" title="Send message">➤</button>
+                <div class="voice-controls">
+                    <button class="voice-toggle-btn" id="voiceToggle" title="Toggle voice responses">🔊</button>
+                    <button class="send-btn" id="sendButton" title="Send message">➤</button>
+                </div>
             </div>
         </div>
     </div>
@@ -527,239 +568,7 @@
         🚨 Crisis Level Detected - Ground Control has been notified
     </div>
 
-    <script>
-        class AstronautChatInterface {
-            constructor() {
-                this.currentPersona = null;
-                this.astronautId = 'ASTRO001';
-                
-                this.initializeElements();
-                this.attachEventListeners();
-            }
-            
-            initializeElements() {
-                this.contactItems = document.querySelectorAll('.contact-item');
-                this.chatHeader = document.getElementById('chatHeader');
-                this.chatAvatar = document.getElementById('chatAvatar');
-                this.chatName = document.getElementById('chatName');
-                this.chatStatus = document.getElementById('chatStatus');
-                this.emotionalStatus = document.getElementById('emotionalStatus');
-                this.messagesContainer = document.getElementById('messagesContainer');
-                this.welcomeScreen = document.getElementById('welcomeScreen');
-                this.inputArea = document.getElementById('inputArea');
-                this.messageInput = document.getElementById('messageInput');
-                this.voiceBtn = document.getElementById('voiceBtn');
-                this.sendBtn = document.getElementById('sendBtn');
-                this.crisisAlert = document.getElementById('crisisAlert');
-            }
-            
-            attachEventListeners() {
-                // Contact selection
-                this.contactItems.forEach(item => {
-                    item.addEventListener('click', () => this.selectContact(item));
-                });
-                
-                // Message input
-                this.messageInput.addEventListener('input', () => this.adjustTextareaHeight());
-                this.messageInput.addEventListener('keypress', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        this.sendMessage();
-                    }
-                });
-                
-                // Send button
-                this.sendBtn.addEventListener('click', () => this.sendMessage());
-                
-                // Voice recording (simplified for now)
-                this.voiceBtn.addEventListener('click', () => {
-                    alert('Voice feature coming soon! Please use text chat for now.');
-                });
-            }
-            
-            selectContact(contactItem) {
-                // Remove active class from all contacts
-                this.contactItems.forEach(item => item.classList.remove('active'));
-                
-                // Add active class to selected contact
-                contactItem.classList.add('active');
-                
-                // Get persona data
-                const persona = contactItem.dataset.persona;
-                const name = contactItem.querySelector('.contact-name').textContent;
-                const avatarClass = contactItem.querySelector('.contact-avatar').className;
-                const emoji = contactItem.querySelector('.contact-avatar').textContent;
-                
-                this.currentPersona = persona;
-                
-                // Update chat header
-                this.chatName.textContent = name;
-                this.chatAvatar.className = avatarClass;
-                this.chatAvatar.textContent = emoji;
-                
-                // Show chat interface
-                this.welcomeScreen.style.display = 'none';
-                this.chatHeader.style.display = 'flex';
-                this.inputArea.style.display = 'block';
-                
-                // Clear messages and show greeting
-                this.messagesContainer.innerHTML = '';
-                this.showGreeting(name, persona);
-                
-                // Focus on input
-                this.messageInput.focus();
-            }
-            
-            showGreeting(name, persona) {
-                const greetings = {
-                    mother: "Beta, how are you feeling today? Sab theek hai na? Main bahut miss kar rahi hun tumhe.",
-                    father: "Son, how's the mission going? I'm so proud of you! Papa hamesha tumhare saath hai.",
-                    best_friend: "Yaar! Kya haal hai space mein? Missing all the fun here! Tell me everything!",
-                    sibling: "Hey stupid astronaut! 😄 Dekho kitna famous ho gaya. But still my annoying brother/sister!",
-                    celebrity_mentor: "My dear student, space is where dreams meet reality. How are you finding this incredible journey?",
-                    grandparent: "Mere laal, space mein kaise ho? Dada bahut proud hai. Khana theek se khaa rahe ho na?"
-                };
-                
-                setTimeout(() => {
-                    this.addMessage(greetings[persona] || "Hello! How are you doing up there?", 'ai');
-                }, 1000);
-            }
-            
-            async sendMessage() {
-                const message = this.messageInput.value.trim();
-                if (!message || !this.currentPersona) return;
-                
-                // Add user message
-                this.addMessage(message, 'astronaut');
-                
-                // Clear input
-                this.messageInput.value = '';
-                this.adjustTextareaHeight();
-                
-                // Show typing indicator
-                this.showTypingIndicator();
-                
-                try {
-                    const response = await fetch('/api/send_message', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            astronaut_id: this.astronautId,
-                            persona: this.currentPersona,
-                            message: message
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    this.removeTypingIndicator();
-                    
-                    if (response.ok) {
-                        this.addMessage(data.response, 'ai');
-                        this.updateEmotionalStatus(data.emotional_state);
-                        
-                        if (data.is_crisis) {
-                            this.showCrisisAlert(data.crisis_summary);
-                        }
-                    } else {
-                        this.addMessage('Sorry, technical glitch ho gaya. Try again please!', 'ai');
-                        console.error('API Error:', data.error);
-                    }
-                    
-                } catch (error) {
-                    this.removeTypingIndicator();
-                    this.addMessage('Connection issue hai. Internet check karo and try again.', 'ai');
-                    console.error('Network error:', error);
-                }
-            }
-            
-            addMessage(text, sender) {
-                const messageDiv = document.createElement('div');
-                messageDiv.className = `message ${sender}`;
-                
-                const now = new Date();
-                const time = now.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-                
-                messageDiv.innerHTML = `
-                    <div class="message-bubble">
-                        ${text}
-                        <div class="message-time">${time}</div>
-                    </div>
-                `;
-                
-                this.messagesContainer.appendChild(messageDiv);
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            }
-            
-            showTypingIndicator() {
-                const typingDiv = document.createElement('div');
-                typingDiv.className = 'message ai typing-indicator';
-                typingDiv.innerHTML = `
-                    <div class="message-bubble">
-                        <div class="loading-indicator">
-                            <span>Thinking</span>
-                            <div class="loading-dots">
-                                <span></span>
-                                <span></span>
-                                <span></span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                
-                this.messagesContainer.appendChild(typingDiv);
-                this.messagesContainer.scrollTop = this.messagesContainer.scrollHeight;
-            }
-            
-            removeTypingIndicator() {
-                const typingIndicator = document.querySelector('.typing-indicator');
-                if (typingIndicator) {
-                    typingIndicator.remove();
-                }
-            }
-            
-            updateEmotionalStatus(emotional_state) {
-                if (!emotional_state) return;
-                
-                const emotions = Object.values(emotional_state);
-                const maxEmotion = emotions.length > 0 ? Math.max(...emotions) : 0;
-                
-                if (maxEmotion > 7) {
-                    this.emotionalStatus.className = 'emotional-indicator crisis';
-                    this.emotionalStatus.textContent = '🚨 High Stress';
-                } else if (maxEmotion > 4) {
-                    this.emotionalStatus.className = 'emotional-indicator stress';
-                    this.emotionalStatus.textContent = '⚠️ Moderate Stress';
-                } else {
-                    this.emotionalStatus.className = 'emotional-indicator normal';
-                    this.emotionalStatus.textContent = '✅ Normal';
-                }
-            }
-            
-            showCrisisAlert(summary) {
-                this.crisisAlert.textContent = `🚨 Crisis Alert: ${summary || 'High emotional distress detected'} - Ground Control notified`;
-                this.crisisAlert.classList.add('show');
-                
-                // Auto-hide after 8 seconds
-                setTimeout(() => {
-                    this.crisisAlert.classList.remove('show');
-                }, 8000);
-            }
-            
-            adjustTextareaHeight() {
-                const textarea = this.messageInput;
-                textarea.style.height = 'auto';
-                textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px';
-            }
-        }
-
-        // Initialize the chat interface when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            const chatInterface = new AstronautChatInterface();
-            console.log('🚀 Astronaut Chat Interface Ready!');
-        });
-    </script>
+    <!-- Chat Interface with Voice Support -->
+    <script src="/static/js/chat.js"></script>
 </body>
 </html>
